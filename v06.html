@@ -4,23 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0a0f17">
-<title>MatchLens 0.9.2</title>
+<title>MatchLens 0.9.3</title>
 <style>html,body{margin:0;background:#080c12;color:#fff;font-family:system-ui,sans-serif}.boot{min-height:100vh;display:grid;place-items:center;color:#9ba8ba}</style>
 </head>
-<body><div class="boot">Ładowanie MatchLens 0.9.2…</div>
+<body><div class="boot">Ładowanie MatchLens 0.9.3…</div>
 <script>
 (async()=>{
   try{
-    const r=await fetch('/index.html?base=092',{cache:'no-store'});
+    const r=await fetch('/index.html?base=093',{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     let html=await r.text();
     html=html
-      .replace('<title>MatchLens 0.5</title>','<title>MatchLens 0.9.2</title>')
-      .replace('MatchLens <span class="muted">0.5</span>','MatchLens <span class="muted">0.9.2</span>')
-      .replace('Advanced Model — ważona forma, rating siły ligi, home/away, H2H i porównanie z rynkiem.','Model Lab 0.9.2 — dokładny sweep remisów co 5 pp i wybór kompromisu Brier/log loss/F1.')
-      .replace('</body>','<script src="/v06.js?v=0604"><\/script><script src="/v07.js?v=0711"><\/script><script src="/v08.js?v=0801"><\/script><script src="/v09.js?v=0901"><\/script><script src="/v091.js?v=0911"><\/script><script src="/v092.js?v=0921"><\/script></body>');
+      .replace('<title>MatchLens 0.5</title>','<title>MatchLens 0.9.3</title>')
+      .replace('MatchLens <span class="muted">0.5</span>','MatchLens <span class="muted">0.9.3</span>')
+      .replace('Advanced Model — ważona forma, rating siły ligi, home/away, H2H i porównanie z rynkiem.','Multi-League Validation — wspólne strojenie i leave-one-league-out bez ręcznych screenshotów.')
+      .replace('</body>','<script src="/v06.js?v=0604"><\/script><script src="/v07.js?v=0711"><\/script><script src="/v08.js?v=0801"><\/script><script src="/v09.js?v=0901"><\/script><script src="/v091.js?v=0911"><\/script><script src="/v092.js?v=0921"><\/script><script src="/v093.js?v=0931"><\/script></body>');
     document.open();document.write(html);document.close();
-  }catch(e){document.body.innerHTML='<div class="boot">Nie udało się uruchomić MatchLens 0.9.2: '+String(e.message||e)+'</div>'}
+  }catch(e){document.body.innerHTML='<div class="boot">Nie udało się uruchomić MatchLens 0.9.3: '+String(e.message||e)+'</div>'}
 })();
 </script>
 </body>
