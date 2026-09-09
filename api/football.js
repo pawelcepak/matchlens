@@ -2,15 +2,31 @@ const ALLOWED_COMPETITIONS = new Set([
   "DED","PL","PD","BL1","SA","FL1","PPL","ELC","BSA","CL","WC","EC"
 ]);
 
-function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      "cache-control": "no-store",
-      "x-content-type-options": "nosniff"
-    }
-  });
+const CACHE = {
+  health: 300,
+  matches: 900,
+  stale: 3600
+};
+
+function json(data, status = 200, cacheSeconds = 0) {
+  const headers = {
+    "content-type": "application/json; charset=utf-8",
+    "x-content-type-options": "nosniff"
+  };
+
+  // Browsers should always revalidate through Vercel, while Vercel's CDN may
+  // serve identical API requests from its edge cache. This reduces calls to
+  // Football-Data without leaving stale data in the user's browser.
+  if (status === 200 && cacheSeconds > 0) {
+    headers["cache-control"] = "no-store";
+    headers["cdn-cache-control"] = `public, max-age=${cacheSeconds}, stale-while-revalidate=${CACHE.stale}`;
+    headers["vercel-cdn-cache-control"] = `public, max-age=${cacheSeconds}, stale-while-revalidate=${CACHE.stale}`;
+    headers["vercel-cache-tag"] = "matchlens-football-data";
+  } else {
+    headers["cache-control"] = "no-store";
+  }
+
+  return new Response(JSON.stringify(data), { status, headers });
 }
 
 async function footballFetch(path, token) {
@@ -45,7 +61,11 @@ export async function GET(request) {
   try {
     if (action === "health") {
       const data = await footballFetch("/competitions/DED", token);
-      return json({ ok: true, competition: data?.name || "Eredivisie" });
+      return json({
+        ok: true,
+        competition: data?.name || "Eredivisie",
+        cache: { edgeSeconds: CACHE.health, staleWhileRevalidateSeconds: CACHE.stale }
+      }, 200, CACHE.health);
     }
 
     if (action !== "matches") {
@@ -102,9 +122,14 @@ export async function GET(request) {
         competition,
         season,
         previousSeasonLoaded,
-        previousSeasonWarning
+        previousSeasonWarning,
+        cache: {
+          edgeSeconds: CACHE.matches,
+          staleWhileRevalidateSeconds: CACHE.stale,
+          key: `${competition}:${season}:${includePrevious ? "current+previous" : "current"}`
+        }
       }
-    });
+    }, 200, CACHE.matches);
   } catch (err) {
     const status = Number(err.status) || 502;
     if (status === 401) return json({ error: "Football-Data odrzuciło token (401). Sprawdź wartość FOOTBALL_DATA_TOKEN." }, 401);
