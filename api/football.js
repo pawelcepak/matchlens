@@ -1,5 +1,5 @@
 const ALLOWED_COMPETITIONS = new Set([
-  "DED","PL","PD","BL1","SA","FL1","PPL","ELC","BSA","CL","WC","EC"
+  "DED","PL","PD","BL1","SA","FL1","PPL","ELC","BSA","CL","EL","UCL","WC","EC"
 ]);
 
 const CACHE = {
@@ -14,9 +14,6 @@ function json(data, status = 200, cacheSeconds = 0) {
     "x-content-type-options": "nosniff"
   };
 
-  // Browsers should always revalidate through Vercel, while Vercel's CDN may
-  // serve identical API requests from its edge cache. This reduces calls to
-  // Football-Data without leaving stale data in the user's browser.
   if (status === 200 && cacheSeconds > 0) {
     headers["cache-control"] = "no-store";
     headers["cdn-cache-control"] = `public, max-age=${cacheSeconds}, stale-while-revalidate=${CACHE.stale}`;
