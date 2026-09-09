@@ -1,7 +1,7 @@
 {
-  "name": "matchlens-v0.9",
-  "version": "0.9.0",
+  "name": "matchlens-v0.9.1",
+  "version": "0.9.1",
   "private": true,
   "type": "module",
-  "description": "MatchLens draw-aware football probability model with Elo, gentle recency weighting and class-wise backtesting."
+  "description": "MatchLens draw-aware football probability model with corrected multiclass Brier scaling and automated draw-strength sweep."
 }
