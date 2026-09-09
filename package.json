@@ -1,7 +1,7 @@
 {
-  "name": "matchlens-v0.6",
-  "version": "0.6.0",
+  "name": "matchlens-v0.7",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
-  "description": "MatchLens explainable football analysis prototype with Vercel proxy and historical backtesting."
+  "description": "MatchLens explainable football analysis prototype with historical backtesting and API-Football squad context."
 }
