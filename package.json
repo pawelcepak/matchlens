@@ -1,7 +1,7 @@
 {
-  "name": "matchlens-v0.8",
-  "version": "0.8.0",
+  "name": "matchlens-v0.9",
+  "version": "0.9.0",
   "private": true,
   "type": "module",
-  "description": "MatchLens model laboratory with comparative historical backtesting, baseline evaluation and explainable football analysis."
+  "description": "MatchLens draw-aware football probability model with Elo, gentle recency weighting and class-wise backtesting."
 }
