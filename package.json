@@ -1,7 +1,7 @@
 {
-  "name": "matchlens-v0.9.7",
-  "version": "0.9.7",
+  "name": "matchlens-v0.9.8",
+  "version": "0.9.8",
   "private": true,
   "type": "module",
-  "description": "MatchLens cross-league strength adjustment lab for European cup history validation."
+  "description": "MatchLens Global Team Elo Lab for European cup validation with club-level cross-league ratings."
 }
