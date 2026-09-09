@@ -48,21 +48,15 @@ alter table public.matchlens_paper_accounts enable row level security;
 alter table public.matchlens_coupons enable row level security;
 alter table public.matchlens_coupon_legs enable row level security;
 
+-- Read only your own MatchLens rows. All money-changing writes are intentionally
+-- denied to the browser and go through the SECURITY DEFINER RPC functions below.
 drop policy if exists "matchlens account select own" on public.matchlens_paper_accounts;
 create policy "matchlens account select own"
   on public.matchlens_paper_accounts for select
   using (auth.uid() = user_id);
 
 drop policy if exists "matchlens account insert own" on public.matchlens_paper_accounts;
-create policy "matchlens account insert own"
-  on public.matchlens_paper_accounts for insert
-  with check (auth.uid() = user_id);
-
 drop policy if exists "matchlens account update own" on public.matchlens_paper_accounts;
-create policy "matchlens account update own"
-  on public.matchlens_paper_accounts for update
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
 
 drop policy if exists "matchlens coupons select own" on public.matchlens_coupons;
 create policy "matchlens coupons select own"
@@ -73,9 +67,6 @@ drop policy if exists "matchlens legs select own" on public.matchlens_coupon_leg
 create policy "matchlens legs select own"
   on public.matchlens_coupon_legs for select
   using (auth.uid() = user_id);
-
--- Writes are done through SECURITY DEFINER RPC functions below. Direct client
--- insert/update/delete policies are intentionally not created.
 
 create or replace function public.matchlens_touch_account()
 returns trigger
@@ -242,6 +233,13 @@ begin
   on conflict (user_id) do update set start_balance=1000.00,cash=1000.00,updated_at=now();
 end;
 $$;
+
+-- SECURITY DEFINER functions are not callable by anonymous/public clients.
+revoke all on function public.matchlens_ensure_account() from public;
+revoke all on function public.matchlens_place_coupon(numeric,jsonb,text,text) from public;
+revoke all on function public.matchlens_settle_coupon(uuid,text) from public;
+revoke all on function public.matchlens_delete_coupon(uuid) from public;
+revoke all on function public.matchlens_reset_paper() from public;
 
 grant execute on function public.matchlens_ensure_account() to authenticated;
 grant execute on function public.matchlens_place_coupon(numeric,jsonb,text,text) to authenticated;
