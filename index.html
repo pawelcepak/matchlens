@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0a0f17">
-<title>MatchLens 0.4</title>
+<title>MatchLens 0.5</title>
 <style>
 :root{--bg:#080c12;--panel:#101722;--p2:#172131;--line:#29364a;--text:#f4f7fb;--muted:#9ba8ba;--blue:#73a8ff;--green:#72d5a0;--yellow:#efc76a;--red:#ed8585}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0,#16243d,#080c12 35%);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
@@ -21,12 +21,15 @@ input,select{width:100%;background:#0c121c;border:1px solid var(--line);color:#f
 .probs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.prob,.metric{background:var(--p2);border:1px solid var(--line);border-radius:13px;padding:14px}.prob{text-align:center}.prob b{font-size:29px}.prob small,.metric small{display:block;color:var(--muted);margin-top:4px}
 .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.metric strong{font-size:20px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--muted)}
 .barline{display:grid;grid-template-columns:120px 1fr 50px;gap:9px;align-items:center;margin:10px 0}.track{height:8px;background:#263246;border-radius:999px;overflow:hidden}.fill{height:100%;background:var(--blue)}
-.kv{display:grid;grid-template-columns:170px 1fr;gap:8px;font-size:13px;margin:7px 0}.ok{color:var(--green)}.bad{color:var(--red)}
-footer{font-size:12px;color:var(--muted);padding:5px 0 25px;line-height:1.5}@media(max-width:800px){.c3,.c4,.c6{grid-column:1/-1}.metrics{grid-template-columns:repeat(2,1fr)}.quality{grid-template-columns:1fr}.wrap{padding:13px}.kv{grid-template-columns:1fr}}
+.market{display:grid;grid-template-columns:1.2fr repeat(3,1fr);gap:8px;align-items:center}.market>div{padding:10px;border-bottom:1px solid var(--line)}.market .head{color:var(--muted);font-size:12px}
+.pos{color:var(--green);font-weight:800}.neg{color:var(--red);font-weight:800}.neutral{color:var(--muted)}.scores{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}.scorebox{background:var(--p2);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center}.scorebox b{font-size:22px}.scorebox small{display:block;color:var(--muted);margin-top:5px}
+.kv{display:grid;grid-template-columns:180px 1fr;gap:8px;font-size:13px;margin:7px 0}.ok{color:var(--green)}.bad{color:var(--red)}
+footer{font-size:12px;color:var(--muted);padding:5px 0 25px;line-height:1.5}
+@media(max-width:800px){.c3,.c4,.c6{grid-column:1/-1}.metrics{grid-template-columns:repeat(2,1fr)}.quality{grid-template-columns:1fr}.wrap{padding:13px}.kv{grid-template-columns:1fr}.market{grid-template-columns:1.2fr repeat(3,1fr);font-size:11px}.scores{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body><div class="wrap">
-<div class="top"><div><h1>MatchLens <span class="muted">0.4</span></h1><div class="sub">Hosted Edition — Football-Data przez bezpieczny backend Vercel.</div></div><div class="badge">token ukryty po stronie serwera</div></div>
+<div class="top"><div><h1>MatchLens <span class="muted">0.5</span></h1><div class="sub">Advanced Model — ważona forma, rating siły ligi, home/away, H2H i porównanie z rynkiem.</div></div><div class="badge">Football-Data • Vercel backend</div></div>
 <div class="tabs"><button class="tab active" data-t="a">Analizator</button><button class="tab" data-t="h">Historia</button><button class="tab" data-t="d">Diagnostyka</button></div>
 
 <section id="a">
@@ -46,103 +49,130 @@ footer{font-size:12px;color:var(--muted);padding:5px 0 25px;line-height:1.5}@med
 <div class="card"><div class="grid">
 <div class="c6"><label>Gospodarze</label><select id="home"><option>Najpierw pobierz dane</option></select></div>
 <div class="c6"><label>Goście</label><select id="away"><option>Najpierw pobierz dane</option></select></div>
-<div class="c6"><label>Absencje gospodarzy — ręczna korekta</label><input id="ha" type="number" min="0" max="12" value="0"></div>
-<div class="c6"><label>Absencje gości — ręczna korekta</label><input id="aa" type="number" min="0" max="12" value="0"></div>
-<div class="c12"><button class="btn primary" id="analyze">Sprawdź jakość i analizuj</button></div>
+<div class="c3"><label>Absencje gospodarzy</label><input id="ha" type="number" min="0" max="12" value="0"></div>
+<div class="c3"><label>Absencje gości</label><input id="aa" type="number" min="0" max="12" value="0"></div>
+<div class="c6"><label>Waga najnowszych meczów</label><select id="decay"><option value="0.82">mocna</option><option value="0.88" selected>normalna</option><option value="0.94">łagodna</option></select></div>
 </div></div>
+
+<div class="card"><h3 style="margin-top:0">Kursy bukmachera — opcjonalne</h3><div class="muted" style="margin-bottom:12px">Kursy nie wpływają na model. Służą tylko do porównania prognozy z rynkiem po usunięciu marży.</div>
+<div class="grid"><div class="c4"><label>Kurs 1</label><input id="odd1" type="number" step="0.01" min="1.01" placeholder="np. 1.22"></div>
+<div class="c4"><label>Kurs X</label><input id="oddx" type="number" step="0.01" min="1.01" placeholder="np. 6.50"></div>
+<div class="c4"><label>Kurs 2</label><input id="odd2" type="number" step="0.01" min="1.01" placeholder="np. 11.00"></div></div></div>
+
+<div class="card"><button class="btn primary" id="analyze">Sprawdź jakość i analizuj</button></div>
 <div id="result" class="hidden"></div>
 </section>
 
 <section id="h" class="hidden"><div class="card"><div class="row" style="justify-content:space-between"><div><h3>Historia prognoz</h3><div class="muted">Zapisywana w tej przeglądarce.</div></div><button class="btn" id="clear">Wyczyść</button></div><div id="hist"></div></div></section>
 
-<section id="d" class="hidden">
-<div class="card"><h3>Diagnostyka połączenia</h3><p class="muted">Tutaj możesz sprawdzić, czy Vercel widzi sekret i czy backend łączy się z Football-Data.</p>
-<button class="btn primary" id="testApi">Testuj backend/API</button><div id="diag" style="margin-top:12px"></div></div>
-</section>
-
-<footer>MatchLens jest narzędziem statystycznym. Nie gwarantuje wyników. Procenty 1X2 są blokowane, gdy próbka jest mniejsza od ustawionego minimum. Dane: Football-Data.org.</footer>
+<section id="d" class="hidden"><div class="card"><h3>Diagnostyka</h3><button class="btn primary" id="testApi">Testuj backend/API</button><div id="diag" style="margin-top:12px"></div></div></section>
+<footer>MatchLens nie gwarantuje wyników. Model i rynek są prezentowane osobno. Duża różnica między nimi jest sygnałem do dalszej weryfikacji, a nie automatyczną rekomendacją.</footer>
 </div>
 
 <script>
-let A={matches:[],teams:new Map(),last:null,meta:null};
+let A={matches:[],teams:new Map(),last:null,meta:null,ratings:new Map()};
 const $=x=>document.getElementById(x),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),pct=x=>(x*100).toFixed(1)+'%';
-
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');['a','h','d'].forEach(x=>$(x).classList.toggle('hidden',x!==b.dataset.t));if(b.dataset.t==='h')history()});
-
-async function api(params){
- const q=new URLSearchParams(params);
- const r=await fetch('/api/football?'+q.toString(),{headers:{'Accept':'application/json'}});
- let data=null; try{data=await r.json()}catch{throw Error('Backend zwrócił nieprawidłową odpowiedź.')}
- if(!r.ok) throw Error(data?.error||('HTTP '+r.status));
- return data;
-}
-
+async function api(params){const q=new URLSearchParams(params),r=await fetch('/api/football?'+q.toString(),{headers:{Accept:'application/json'}});let d;try{d=await r.json()}catch{throw Error('Nieprawidłowa odpowiedź backendu.')}if(!r.ok)throw Error(d?.error||('HTTP '+r.status));return d}
 function normalize(m){return{id:String(m.id),date:(m.utcDate||'').slice(0,10),homeId:String(m.homeTeam?.id||''),awayId:String(m.awayTeam?.id||''),home:m.homeTeam?.name||'',away:m.awayTeam?.name||'',hs:m.score?.fullTime?.home,as:m.score?.fullTime?.away,status:m.status,season:m.seasonStart||null}}
 function done(m){return m.status==='FINISHED'&&Number.isFinite(m.score?.fullTime?.home)&&Number.isFinite(m.score?.fullTime?.away)}
 
+function buildRatings(){
+  const ratings=new Map(); [...A.teams.keys()].forEach(id=>ratings.set(id,1500));
+  const ordered=[...A.matches].sort((a,b)=>a.date.localeCompare(b.date));
+  const K=22, homeAdv=55;
+  ordered.forEach(m=>{
+    let rh=ratings.get(m.homeId)??1500, ra=ratings.get(m.awayId)??1500;
+    let eh=1/(1+Math.pow(10,(ra-(rh+homeAdv))/400));
+    let sh=m.hs>m.as?1:m.hs===m.as?.5:0;
+    let margin=Math.max(1,Math.abs(m.hs-m.as));
+    let mult=Math.log(margin+1)*1.25;
+    let delta=K*mult*(sh-eh);
+    ratings.set(m.homeId,rh+delta);ratings.set(m.awayId,ra-delta);
+  });
+  A.ratings=ratings;
+}
+
 $('load').onclick=async()=>{
- $('load').disabled=true;$('status').textContent='Pobieranie danych przez backend…';
+ $('load').disabled=true;$('status').textContent='Pobieranie danych…';
  try{
   const d=await api({action:'matches',competition:$('comp').value,season:$('season').value,includePrevious:$('historyMode').value==='previous'?'1':'0'});
-  A.meta=d.meta||{};A.matches=(d.matches||[]).filter(done).map(normalize);
-  A.teams.clear();A.matches.forEach(m=>{if(m.homeId)A.teams.set(m.homeId,m.home);if(m.awayId)A.teams.set(m.awayId,m.away)});
+  A.meta=d.meta||{};A.matches=(d.matches||[]).filter(done).map(normalize);A.teams.clear();
+  A.matches.forEach(m=>{if(m.homeId)A.teams.set(m.homeId,m.home);if(m.awayId)A.teams.set(m.awayId,m.away)});
+  buildRatings();
   const opt=[...A.teams].sort((a,b)=>a[1].localeCompare(b[1])).map(([id,n])=>`<option value="${id}">${esc(n)}</option>`).join('');
   $('home').innerHTML=opt||'<option>Brak drużyn</option>';$('away').innerHTML=opt||'<option>Brak drużyn</option>';if($('away').options.length>1)$('away').selectedIndex=1;
-  let extra=A.meta.previousSeasonLoaded?' + poprzedni sezon':'';
-  let warn=A.meta.previousSeasonWarning?' • Poprzedni sezon niedostępny w API':'';
-  $('status').textContent=`Pobrano ${A.matches.length} zakończonych meczów${extra} • ${A.teams.size} drużyn${warn}`;
- }catch(e){$('status').textContent='Błąd: '+e.message}
- finally{$('load').disabled=false}
+  $('status').textContent=`Pobrano ${A.matches.length} zakończonych meczów${A.meta.previousSeasonLoaded?' + poprzedni sezon':''} • ${A.teams.size} drużyn${A.meta.previousSeasonWarning?' • poprzedni sezon częściowo niedostępny':''}`;
+ }catch(e){$('status').textContent='Błąd: '+e.message}finally{$('load').disabled=false}
 };
-
 function tm(id){return A.matches.filter(m=>m.homeId===id||m.awayId===id).sort((a,b)=>b.date.localeCompare(a.date))}
 function one(m,id){let h=m.homeId===id,g=h?m.hs:m.as,a=h?m.as:m.hs;return{g,a,r:g>a?'W':g<a?'L':'D',home:h}}
-function stats(ms,id){let w=0,d=0,l=0,g=0,a=0,b=0,o=0;ms.forEach(m=>{let x=one(m,id);g+=x.g;a+=x.a;x.r==='W'?w++:x.r==='D'?d++:l++;if(x.g>0&&x.a>0)b++;if(x.g+x.a>=3)o++});let n=ms.length;return{n,w,d,l,g:n?g/n:0,a:n?a/n:0,ppg:n?(3*w+d)/n:0,btts:n?b/n:0,over:n?o/n:0}}
+function weightedStats(ms,id,decay){
+ let sw=0,pts=0,gf=0,ga=0,w=0,d=0,l=0,btts=0,over=0;
+ ms.forEach((m,i)=>{let x=one(m,id),wt=Math.pow(decay,i);sw+=wt;pts+=(x.r==='W'?3:x.r==='D'?1:0)*wt;gf+=x.g*wt;ga+=x.a*wt;x.r==='W'?w++:x.r==='D'?d++:l++;if(x.g>0&&x.a>0)btts+=wt;if(x.g+x.a>=3)over+=wt});
+ return{n:ms.length,w,d,l,g:sw?gf/sw:0,a:sw?ga/sw:0,ppg:sw?pts/sw:0,btts:sw?btts/sw:0,over:sw?over/sw:0}
+}
 function soft(xs){let mx=Math.max(...xs),z=xs.map(x=>Math.exp(x-mx)),s=z.reduce((a,b)=>a+b);return z.map(x=>x/s)}
-function over(l){let e=Math.exp(-l);return clamp(1-(e+e*l+e*l*l/2),0,1)}
+function poisson(k,l){return Math.exp(-l)*Math.pow(l,k)/factorial(k)}function factorial(n){let r=1;for(let i=2;i<=n;i++)r*=i;return r}
+function over25(l){let e=Math.exp(-l);return clamp(1-(e+e*l+e*l*l/2),0,1)}
+function topScores(xh,xa){let arr=[];for(let h=0;h<=6;h++)for(let a=0;a<=6;a++)arr.push({s:`${h}:${a}`,p:poisson(h,xh)*poisson(a,xa)});return arr.sort((x,y)=>y.p-x.p).slice(0,5)}
 function table(ms){return `<table><tr><th>Data</th><th>Mecz</th><th>Wynik</th></tr>${ms.map(m=>`<tr><td>${esc(m.date)}</td><td>${esc(m.home)} – ${esc(m.away)}</td><td><b>${m.hs}:${m.as}</b></td></tr>`).join('')}</table>`}
 function bar(n,v){return `<div class="barline"><span>${esc(n)}</span><div class="track"><div class="fill" style="width:${v*100}%"></div></div><b>${pct(v)}</b></div>`}
+function marketProb(){
+ let o1=+$('odd1').value,ox=+$('oddx').value,o2=+$('odd2').value;
+ if(!(o1>1&&ox>1&&o2>1))return null;
+ let a=1/o1,b=1/ox,c=1/o2,s=a+b+c;return{p1:a/s,px:b/s,p2:c/s,margin:s-1,odds:[o1,ox,o2]}
+}
+function diffClass(x){return x>.05?'pos':x<-.05?'neg':'neutral'}
 
 $('analyze').onclick=()=>{
  let hi=$('home').value,ai=$('away').value;if(!A.teams.has(hi)||!A.teams.has(ai))return alert('Najpierw pobierz dane.');if(hi===ai)return alert('Wybierz różne drużyny.');
- let hn=A.teams.get(hi),an=A.teams.get(ai),N=+$('n').value,min=+$('minimum').value,H=tm(hi).slice(0,N),B=tm(ai).slice(0,N),hs=stats(H,hi),as=stats(B,ai);
- let hv=stats(H.filter(m=>m.homeId===hi),hi),av=stats(B.filter(m=>m.awayId===ai),ai);
+ let hn=A.teams.get(hi),an=A.teams.get(ai),N=+$('n').value,min=+$('minimum').value,decay=+$('decay').value,H=tm(hi).slice(0,N),B=tm(ai).slice(0,N);
+ let hs=weightedStats(H,hi,decay),as=weightedStats(B,ai,decay),hv=weightedStats(H.filter(m=>m.homeId===hi),hi,decay),av=weightedStats(B.filter(m=>m.awayId===ai),ai,decay);
  let h2=A.matches.filter(m=>(m.homeId===hi&&m.awayId===ai)||(m.homeId===ai&&m.awayId===hi)).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,+$('hn').value);
- let dataRatio=Math.min(H.length,B.length)/Math.max(1,N),venueRatio=Math.min(hv.n,av.n)/Math.max(1,Math.ceil(N/2));
- let q=Math.round(clamp(15+dataRatio*50+venueRatio*20+Math.min(h2.length,5)*3,0,100));
+ let q=Math.round(clamp(15+Math.min(H.length,B.length)/Math.max(1,N)*50+Math.min(hv.n,av.n)/Math.max(1,Math.ceil(N/2))*20+Math.min(h2.length,5)*3,0,100));
  let enough=H.length>=min&&B.length>=min;
  let body=`<div class="card"><div class="match"><h2>${esc(hn)}</h2><div class="vs">VS</div><h2>${esc(an)}</h2></div></div>
- <div class="card"><div class="quality"><div><div class="muted">Jakość danych</div><div class="qnum">${q}/100</div></div><div><div class="qbar"><div class="qfill" style="width:${q}%"></div></div><p class="muted">${esc(hn)}: ${H.length} meczów • ${esc(an)}: ${B.length} • dom/wyjazd: ${hv.n}/${av.n} • H2H: ${h2.length}</p></div></div></div>`;
- if(A.meta?.previousSeasonWarning) body+=`<div class="card"><div class="notice warning"><b>Uwaga:</b> API nie udostępniło poprzedniego sezonu w tym zapytaniu. Analiza korzysta tylko z danych, które Football-Data faktycznie zwróciło.</div></div>`;
- if(!enough){
-   body+=`<div class="card"><div class="notice danger"><b>PROGNOZA ZABLOKOWANA — ZA MAŁO DANYCH</b><br>Minimum: ${min} zakończonych meczów każdej drużyny. ${esc(hn)}: ${H.length}, ${esc(an)}: ${B.length}. Nie generuję sztucznie precyzyjnego 1X2.</div></div>`;
- }else{
-   let ha=+$('ha').value||0,aa=+$('aa').value||0,h2hW=0,a2hW=0;
-   h2.forEach(m=>{if(m.hs===m.as)return;if((m.homeId===hi&&m.hs>m.as)||(m.awayId===hi&&m.as>m.hs))h2hW++;else a2hW++});
-   let sh=1.5*hs.ppg/3+.52*hs.g-.42*hs.a+.30*hv.ppg/3+.12*(h2.length?h2hW/h2.length:.5)-.055*ha+.16;
-   let sa=1.5*as.ppg/3+.52*as.g-.42*as.a+.27*av.ppg/3+.12*(h2.length?a2hW/h2.length:.5)-.055*aa;
-   let close=1-clamp(Math.abs(sh-sa)/2.5,0,1),[p1,px,p2]=soft([sh,.62+.50*close-.10*((hs.g+as.g)/2),sa]);
-   let xh=clamp((hs.g+as.a)/2+.12-.035*ha,.15,4),xa=clamp((as.g+hs.a)/2-.03-.035*aa,.15,4),ov=over(xh+xa),bt=clamp(1-Math.exp(-xh)-Math.exp(-xa)+Math.exp(-(xh+xa)),0,1);
-   body+=`<div class="card"><h3>Ocena 1X2</h3><div class="probs"><div class="prob"><b>${pct(p1)}</b><small>1 • ${esc(hn)}</small></div><div class="prob"><b>${pct(px)}</b><small>X • remis</small></div><div class="prob"><b>${pct(p2)}</b><small>2 • ${esc(an)}</small></div></div>${bar('Over 2.5',ov)}${bar('BTTS',bt)}</div>
-   <div class="card"><h3>Dane modelu</h3><div class="metrics"><div class="metric"><strong>${hs.w}W ${hs.d}D ${hs.l}L</strong><small>${esc(hn)}</small></div><div class="metric"><strong>${as.w}W ${as.d}D ${as.l}L</strong><small>${esc(an)}</small></div><div class="metric"><strong>${hs.g.toFixed(2)} / ${hs.a.toFixed(2)}</strong><small>gole ${esc(hn)}</small></div><div class="metric"><strong>${as.g.toFixed(2)} / ${as.a.toFixed(2)}</strong><small>gole ${esc(an)}</small></div><div class="metric"><strong>${xh.toFixed(2)} : ${xa.toFixed(2)}</strong><small>prognoza goli</small></div><div class="metric"><strong>${hv.n} / ${av.n}</strong><small>próbka dom/wyjazd</small></div></div></div>`;
-   A.last={at:new Date().toISOString(),home:hn,away:an,p1,px,p2,ov,bt,q,competition:$('comp').value,season:$('season').value};
-   body+=`<div class="card"><button class="btn" onclick="savePrediction()">Zapisz prognozę</button></div>`;
+ <div class="card"><div class="quality"><div><div class="muted">Jakość danych</div><div class="qnum">${q}/100</div></div><div><div class="qbar"><div class="qfill" style="width:${q}%"></div></div><p class="muted">${esc(hn)}: ${H.length} • ${esc(an)}: ${B.length} • dom/wyjazd: ${hv.n}/${av.n} • H2H: ${h2.length}</p></div></div></div>`;
+ if(!enough){body+=`<div class="card"><div class="notice danger"><b>PROGNOZA ZABLOKOWANA</b><br>Za mało danych: minimum ${min} zakończonych meczów każdej drużyny.</div></div>`}
+ else{
+  let ha=+$('ha').value||0,aa=+$('aa').value||0,h2hW=0,a2hW=0;
+  h2.forEach(m=>{if(m.hs===m.as)return;if((m.homeId===hi&&m.hs>m.as)||(m.awayId===hi&&m.as>m.hs))h2hW++;else a2hW++});
+  let rh=A.ratings.get(hi)||1500,ra=A.ratings.get(ai)||1500,eloDiff=(rh-ra)/400;
+  let formH=hs.ppg/3,formA=as.ppg/3,venueH=hv.n?hv.ppg/3:formH,venueA=av.n?av.ppg/3:formA;
+  let sh=1.05*formH+.35*hs.g-.28*hs.a+.22*venueH+.70*eloDiff+.07*(h2.length?h2hW/h2.length:.5)-.045*ha+.18;
+  let sa=1.05*formA+.35*as.g-.28*as.a+.20*venueA-.70*eloDiff+.07*(h2.length?a2hW/h2.length:.5)-.045*aa;
+  let close=1-clamp(Math.abs(sh-sa)/2.2,0,1),[p1,px,p2]=soft([sh,.56+.44*close-.08*((hs.g+as.g)/2),sa]);
+  let eloGoalAdj=clamp(eloDiff*.22,-.35,.35);
+  let xh=clamp((hs.g+as.a)/2+.15+eloGoalAdj-.03*ha,.15,4),xa=clamp((as.g+hs.a)/2-.05-eloGoalAdj-.03*aa,.15,4);
+  let ov=over25(xh+xa),bt=clamp(1-Math.exp(-xh)-Math.exp(-xa)+Math.exp(-(xh+xa)),0,1);
+  body+=`<div class="card"><h3>Ocena 1X2</h3><div class="probs"><div class="prob"><b>${pct(p1)}</b><small>1 • ${esc(hn)}</small></div><div class="prob"><b>${pct(px)}</b><small>X • remis</small></div><div class="prob"><b>${pct(p2)}</b><small>2 • ${esc(an)}</small></div></div>${bar('Over 2.5',ov)}${bar('BTTS',bt)}</div>`;
+  body+=`<div class="card"><h3>Siła i forma</h3><div class="metrics">
+  <div class="metric"><strong>${Math.round(rh)}</strong><small>rating ${esc(hn)}</small></div><div class="metric"><strong>${Math.round(ra)}</strong><small>rating ${esc(an)}</small></div>
+  <div class="metric"><strong>${hs.w}W ${hs.d}D ${hs.l}L</strong><small>forma ${esc(hn)}</small></div><div class="metric"><strong>${as.w}W ${as.d}D ${as.l}L</strong><small>forma ${esc(an)}</small></div>
+  <div class="metric"><strong>${hs.g.toFixed(2)} / ${hs.a.toFixed(2)}</strong><small>ważone gole ${esc(hn)}</small></div><div class="metric"><strong>${as.g.toFixed(2)} / ${as.a.toFixed(2)}</strong><small>ważone gole ${esc(an)}</small></div>
+  <div class="metric"><strong>${xh.toFixed(2)} : ${xa.toFixed(2)}</strong><small>prognoza goli</small></div><div class="metric"><strong>${hv.n} / ${av.n}</strong><small>próbka dom/wyjazd</small></div></div></div>`;
+  let scores=topScores(xh,xa);
+  body+=`<div class="card"><h3>Najbardziej prawdopodobne wyniki</h3><div class="scores">${scores.map(s=>`<div class="scorebox"><b>${s.s}</b><small>${pct(s.p)}</small></div>`).join('')}</div></div>`;
+  let market=marketProb();
+  if(market){
+    let d1=p1-market.p1,dx=px-market.px,d2=p2-market.p2,maxD=Math.max(Math.abs(d1),Math.abs(dx),Math.abs(d2));
+    body+=`<div class="card"><h3>Model vs rynek</h3><div class="market">
+      <div class="head"></div><div class="head">MODEL</div><div class="head">RYNEK</div><div class="head">RÓŻNICA</div>
+      <div>${esc(hn)}</div><div>${pct(p1)}</div><div>${pct(market.p1)}</div><div class="${diffClass(d1)}">${d1>=0?'+':''}${(d1*100).toFixed(1)} pp</div>
+      <div>Remis</div><div>${pct(px)}</div><div>${pct(market.px)}</div><div class="${diffClass(dx)}">${dx>=0?'+':''}${(dx*100).toFixed(1)} pp</div>
+      <div>${esc(an)}</div><div>${pct(p2)}</div><div>${pct(market.p2)}</div><div class="${diffClass(d2)}">${d2>=0?'+':''}${(d2*100).toFixed(1)} pp</div>
+    </div><p class="muted">Marża wynikająca z podanych kursów: ${(market.margin*100).toFixed(1)}%. Prawdopodobieństwa rynku zostały znormalizowane po usunięciu marży.</p>
+    ${maxD>=.12?'<div class="notice warning"><b>DUŻA ROZBIEŻNOŚĆ MODEL–RYNEK</b><br>Różnica przekracza 12 punktów procentowych. To sygnał, że model i rynek bardzo inaczej oceniają mecz — wynik modelu wymaga dodatkowej weryfikacji.</div>':''}</div>`;
+  }
+  A.last={at:new Date().toISOString(),home:hn,away:an,p1,px,p2,ov,bt,q,rh,ra,xh,xa,market};
+  body+=`<div class="card"><button class="btn" onclick="savePrediction()">Zapisz prognozę</button></div>`;
  }
  body+=`<div class="grid"><div class="card c6"><h3>${esc(hn)} — ostatnie mecze</h3>${table(H)}</div><div class="card c6"><h3>${esc(an)} — ostatnie mecze</h3>${table(B)}</div><div class="card c12"><h3>H2H</h3>${h2.length?table(h2):'<span class="muted">Brak H2H w pobranym zakresie.</span>'}</div></div>`;
  $('result').innerHTML=body;$('result').classList.remove('hidden');$('result').scrollIntoView({behavior:'smooth'});
 };
-
 function savePrediction(){if(!A.last)return;let h=JSON.parse(localStorage.ml_hist||'[]');h.unshift(A.last);localStorage.ml_hist=JSON.stringify(h.slice(0,250));alert('Zapisano prognozę.')}
-function history(){let h=JSON.parse(localStorage.ml_hist||'[]');$('hist').innerHTML=h.length?h.map(x=>`<p><b>${esc(x.home)} – ${esc(x.away)}</b><br><span class="muted">${new Date(x.at).toLocaleString('pl-PL')} • jakość ${x.q}/100 • 1 ${pct(x.p1)} / X ${pct(x.px)} / 2 ${pct(x.p2)}</span></p>`).join(''):'<span class="muted">Brak zapisanych prognoz.</span>'}
+function history(){let h=JSON.parse(localStorage.ml_hist||'[]');$('hist').innerHTML=h.length?h.map(x=>`<p><b>${esc(x.home)} – ${esc(x.away)}</b><br><span class="muted">${new Date(x.at).toLocaleString('pl-PL')} • jakość ${x.q}/100 • 1 ${pct(x.p1)} / X ${pct(x.px)} / 2 ${pct(x.p2)}${x.market?' • porównano z rynkiem':''}</span></p>`).join(''):'<span class="muted">Brak zapisanych prognoz.</span>'}
 $('clear').onclick=()=>{if(confirm('Wyczyścić historię?')){delete localStorage.ml_hist;history()}};
-
-$('testApi').onclick=async()=>{
- $('diag').innerHTML='<div class="status">Testowanie…</div>';
- try{
-  const d=await api({action:'health'});
-  $('diag').innerHTML=`<div class="notice good"><b>Backend działa.</b><div class="kv"><span>Vercel Function</span><span class="ok">OK</span></div><div class="kv"><span>FOOTBALL_DATA_TOKEN</span><span class="ok">ustawiony</span></div><div class="kv"><span>Football-Data</span><span class="ok">połączono</span></div><div class="kv"><span>Test rozgrywek</span><span>${esc(d.competition||'OK')}</span></div></div>`;
- }catch(e){
-  $('diag').innerHTML=`<div class="notice danger"><b>Test nieudany.</b><br>${esc(e.message)}</div>`;
- }
-};
+$('testApi').onclick=async()=>{$('diag').innerHTML='<div class="status">Testowanie…</div>';try{const d=await api({action:'health'});$('diag').innerHTML=`<div class="notice good"><b>Backend działa.</b><div class="kv"><span>Vercel Function</span><span class="ok">OK</span></div><div class="kv"><span>FOOTBALL_DATA_TOKEN</span><span class="ok">ustawiony</span></div><div class="kv"><span>Football-Data</span><span class="ok">połączono</span></div><div class="kv"><span>Test rozgrywek</span><span>${esc(d.competition||'OK')}</span></div></div>`}catch(e){$('diag').innerHTML=`<div class="notice danger"><b>Test nieudany.</b><br>${esc(e.message)}</div>`}};
 </script></body></html>
