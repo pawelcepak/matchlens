@@ -1,5 +1,19 @@
 {
-  "rewrites": [
-    { "source": "/", "destination": "/v06.html" }
+  "redirects": [
+    { "source": "/", "destination": "/v06.html", "permanent": false }
+  ],
+  "headers": [
+    {
+      "source": "/v06.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/v06.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" }
+      ]
+    }
   ]
 }
