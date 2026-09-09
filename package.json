@@ -1,7 +1,7 @@
 {
-  "name": "matchlens-v0.9.3",
-  "version": "0.9.3",
+  "name": "matchlens-v0.9.4",
+  "version": "0.9.4",
   "private": true,
   "type": "module",
-  "description": "MatchLens multi-league validation with pooled draw calibration and leave-one-league-out testing."
+  "description": "MatchLens temporal out-of-sample validation with expandable domestic and European competition support."
 }
