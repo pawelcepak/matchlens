@@ -1,7 +1,7 @@
 {
-  "name": "matchlens-v0.9.6",
-  "version": "0.9.6",
+  "name": "matchlens-v0.9.7",
+  "version": "0.9.7",
   "private": true,
   "type": "module",
-  "description": "MatchLens historical European cup backtest across a completed season with cross-competition team history."
+  "description": "MatchLens cross-league strength adjustment lab for European cup history validation."
 }
