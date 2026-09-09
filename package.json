@@ -1,7 +1,7 @@
 {
-  "name": "matchlens-v0.9.2",
-  "version": "0.9.2",
+  "name": "matchlens-v0.9.3",
+  "version": "0.9.3",
   "private": true,
   "type": "module",
-  "description": "MatchLens fine draw-calibration laboratory with 5-point sweep and Brier/log-loss/F1 compromise selection."
+  "description": "MatchLens multi-league validation with pooled draw calibration and leave-one-league-out testing."
 }
