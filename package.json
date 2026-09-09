@@ -1,7 +1,7 @@
 {
-  "name": "matchlens-v0.9.9",
-  "version": "0.9.9",
+  "name": "matchlens-v0.9.9.1",
+  "version": "0.9.9.1",
   "private": true,
   "type": "module",
-  "description": "MatchLens Paper Betting simulator with a virtual 1000 PLN bankroll and coupon tracking."
+  "description": "MatchLens Paper Betting cloud sync with Supabase GitHub authentication and isolated RLS-protected tables."
 }
