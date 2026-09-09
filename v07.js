@@ -1,7 +1,8 @@
 (() => {
-  const VERSION = '0.7';
+  const VERSION = '0.7.1';
   const LEAGUES = { DED:88, PL:39, PD:140, BL1:78, SA:135, FL1:61, PPL:94, ELC:40, BSA:71, CL:2 };
   const TTL = 30 * 60 * 1000;
+  const COVERAGE_TTL = 6 * 60 * 60 * 1000;
 
   function norm(s){
     return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
@@ -23,11 +24,17 @@
     return d;
   }
   function cacheKey(comp,season){return `ml07:injuries:${comp}:${season}`}
+  function coverageKey(comp,season){return `ml071:coverage:${comp}:${season}`}
   function getCached(comp,season){
     try{const x=JSON.parse(localStorage.getItem(cacheKey(comp,season))||'null'); if(x&&Date.now()-x.ts<TTL)return x.data;}catch{}
     return null;
   }
   function setCached(comp,season,data){try{localStorage.setItem(cacheKey(comp,season),JSON.stringify({ts:Date.now(),data}))}catch{}}
+  function getCoverageCached(comp,season){
+    try{const x=JSON.parse(localStorage.getItem(coverageKey(comp,season))||'null'); if(x&&Date.now()-x.ts<COVERAGE_TTL)return x.data;}catch{}
+    return null;
+  }
+  function setCoverageCached(comp,season,data){try{localStorage.setItem(coverageKey(comp,season),JSON.stringify({ts:Date.now(),data}))}catch{}}
 
   function installStyle(){
     const s=document.createElement('style');
@@ -46,8 +53,8 @@
     const card=document.createElement('div');
     card.className='card'; card.id='ml07-context';
     card.innerHTML=`<h3 style="margin-top:0">Kontekst składu — API-Football</h3>
-      <div class="muted">Pobiera aktualne wpisy o kontuzjach/absencjach dla wybranej ligi i sezonu. Wynik automatycznie uzupełnia pola absencji; nadal możesz je ręcznie poprawić.</div>
-      <div class="row" style="margin-top:12px"><button class="btn primary" id="ctxLoad">Pobierz absencje</button><button class="btn" id="ctxRefresh">Odśwież</button><span class="status" id="ctxStatus">Nie pobierano kontekstu.</span></div>
+      <div class="muted">Najpierw sprawdza, czy wybrany sezon jest dostępny w Twoim planie API-Football. Dopiero potem pobiera kontuzje/absencje, więc nie marnuje zapytań na niedostępny sezon.</div>
+      <div class="row" style="margin-top:12px"><button class="btn primary" id="ctxLoad">Sprawdź i pobierz absencje</button><button class="btn" id="ctxRefresh">Sprawdź ponownie</button><span class="status" id="ctxStatus">Nie sprawdzano dostępności.</span></div>
       <div id="ctxResult"></div>`;
     odds.parentNode.insertBefore(card,odds);
     $('ctxLoad').onclick=()=>loadContext(false);
@@ -76,6 +83,32 @@
     </div><div class="ctxmeta"><span class="badge">Źródło: API-Football</span>${quota?.remaining!=null?`<span class="badge">Pozostało zapytań: ${esc(quota.remaining)}${quota.limit?` / ${esc(quota.limit)}`:''}</span>`:''}<span class="badge">${cached?'cache lokalny':'świeże dane / cache Vercel'}</span></div>`;
   }
 
+  function explainPlanLimit(message,season){
+    const text=String(message||'');
+    const range=text.match(/from\s+(\d{4})\s+to\s+(\d{4})/i);
+    const suggested=range?`${range[1]}–${range[2]}`:'starsze sezony udostępnione przez API-Football';
+    $('ctxStatus').textContent=`Sezon ${season} niedostępny w planie Free.`;
+    $('ctxResult').innerHTML=`<div class="notice warning" style="margin-top:12px"><b>API-Football Free nie udostępnia kontekstu dla sezonu ${esc(season)}.</b><br>
+      API sugeruje zakres ${esc(suggested)}. Nie wysyłam zapytania o kontuzje dla tego sezonu, więc nie marnujemy kolejnego requestu. Pola absencji pozostają ręczne.</div>`;
+  }
+
+  async function preflight(comp,league,season,force){
+    if(!force){
+      const cached=getCoverageCached(comp,season);
+      if(cached) return cached;
+    }
+    try{
+      const data=await contextApi({action:'coverage',league:String(league),season:String(season)});
+      const result={ok:true,data};
+      setCoverageCached(comp,season,result);
+      return result;
+    }catch(e){
+      const result={ok:false,error:e.message||String(e)};
+      setCoverageCached(comp,season,result);
+      return result;
+    }
+  }
+
   async function loadContext(force){
     if(!A?.matches?.length){$('ctxStatus').textContent='Najpierw kliknij „Pobierz dane”.';return;}
     const comp=$('comp').value, season=$('season').value, league=LEAGUES[comp];
@@ -84,8 +117,14 @@
     const homeName=A.teams.get(hi)||$('home').selectedOptions[0]?.textContent||'';
     const awayName=A.teams.get(ai)||$('away').selectedOptions[0]?.textContent||'';
     if(!homeName||!awayName||hi===ai){$('ctxStatus').textContent='Wybierz dwie różne drużyny.';return;}
-    $('ctxStatus').textContent='Pobieranie kontekstu…'; $('ctxLoad').disabled=true; $('ctxRefresh').disabled=true;
+    $('ctxStatus').textContent='Sprawdzanie dostępności sezonu…'; $('ctxLoad').disabled=true; $('ctxRefresh').disabled=true;
     try{
+      const coverage=await preflight(comp,league,season,force);
+      if(!coverage.ok){
+        explainPlanLimit(coverage.error,season);
+        return;
+      }
+      $('ctxStatus').textContent='Sezon dostępny. Pobieranie absencji…';
       let d=!force&&getCached(comp,season), cached=!!d;
       if(!d){d=await contextApi({action:'injuries',league:String(league),season:String(season)});setCached(comp,season,d)}
       const raw=Array.isArray(d.response)?d.response:[];
@@ -94,7 +133,7 @@
       const hp=uniquePlayers(h), ap=uniquePlayers(a);
       $('ha').value=hp.length; $('aa').value=ap.length;
       $('ctxStatus').textContent=`Uzupełniono absencje: ${homeName} ${hp.length}, ${awayName} ${ap.length}.`;
-      renderContext(homeName,awayName,hp,ap,d.quota||null,cached);
+      renderContext(homeName,awayName,hp,ap,d.quota||coverage.data?.quota||null,cached);
     }catch(e){
       $('ctxStatus').textContent='Błąd: '+e.message;
       $('ctxResult').innerHTML='<div class="notice warning" style="margin-top:12px">API-Football nie zwróciło kontekstu. Pola absencji pozostają ręczne.</div>';
@@ -117,7 +156,7 @@
 
   installStyle();
   const ver=document.querySelector('.top h1 .muted'); if(ver)ver.textContent=VERSION;
-  const sub=document.querySelector('.top .sub'); if(sub)sub.textContent='Explainable Model + kontekst składu — forma, rating, home/away, H2H, backtest i absencje z API-Football.';
+  const sub=document.querySelector('.top .sub'); if(sub)sub.textContent='Explainable Model + kontrola dostępności kontekstu — forma, rating, home/away, H2H, backtest i absencje, gdy plan API je udostępnia.';
   addContextCard();
   extendDiagnostics();
 })();
