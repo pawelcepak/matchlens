@@ -1,6 +1,6 @@
 {
-  "name": "matchlens-v0.4",
-  "version": "0.4.0",
+  "name": "matchlens-v0.5",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "description": "MatchLens hosted football analysis prototype with Vercel proxy."
