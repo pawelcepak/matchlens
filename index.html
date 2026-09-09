@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0a0f17">
+<title>MatchLens 0.4</title>
+<style>
+:root{--bg:#080c12;--panel:#101722;--p2:#172131;--line:#29364a;--text:#f4f7fb;--muted:#9ba8ba;--blue:#73a8ff;--green:#72d5a0;--yellow:#efc76a;--red:#ed8585}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0,#16243d,#080c12 35%);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1200px;margin:auto;padding:20px}.top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.top h1{margin:0;font-size:30px}.sub,.muted{color:var(--muted)}
+.badge{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:8px 11px;color:var(--muted);font-size:12px}.tabs{display:flex;gap:7px;margin:18px 0;flex-wrap:wrap}
+.tab,.btn{border:1px solid var(--line);border-radius:11px;padding:10px 13px;background:#141e2d;color:#dce7f8;cursor:pointer}.tab.active,.btn.primary{background:var(--blue);color:#07101d;border-color:transparent;font-weight:800}
+.card{background:rgba(16,23,34,.96);border:1px solid var(--line);border-radius:17px;padding:17px;margin-bottom:14px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:11px}
+.c3{grid-column:span 3}.c4{grid-column:span 4}.c6{grid-column:span 6}.c12{grid-column:1/-1}label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
+input,select{width:100%;background:#0c121c;border:1px solid var(--line);color:#fff;border-radius:10px;padding:11px;outline:none}.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.status,.notice{padding:11px 13px;background:#101b2a;border:1px solid #29415f;border-radius:11px;font-size:13px;line-height:1.5}.danger{border-color:#65373d;background:#211317;color:#f1b0b0}
+.warning{border-color:#67562d;background:#211d12;color:#ead69c}.good{border-color:#315e49;background:#101e18;color:#c9ead9}.hidden{display:none!important}
+.match{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;text-align:center}.vs{font-size:21px;color:var(--muted);font-weight:800}
+.quality{display:grid;grid-template-columns:150px 1fr;gap:18px;align-items:center}.qnum{font-size:44px;font-weight:900}.qbar{height:11px;background:#263246;border-radius:999px;overflow:hidden}.qfill{height:100%;background:var(--blue)}
+.probs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.prob,.metric{background:var(--p2);border:1px solid var(--line);border-radius:13px;padding:14px}.prob{text-align:center}.prob b{font-size:29px}.prob small,.metric small{display:block;color:var(--muted);margin-top:4px}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.metric strong{font-size:20px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--muted)}
+.barline{display:grid;grid-template-columns:120px 1fr 50px;gap:9px;align-items:center;margin:10px 0}.track{height:8px;background:#263246;border-radius:999px;overflow:hidden}.fill{height:100%;background:var(--blue)}
+.kv{display:grid;grid-template-columns:170px 1fr;gap:8px;font-size:13px;margin:7px 0}.ok{color:var(--green)}.bad{color:var(--red)}
+footer{font-size:12px;color:var(--muted);padding:5px 0 25px;line-height:1.5}@media(max-width:800px){.c3,.c4,.c6{grid-column:1/-1}.metrics{grid-template-columns:repeat(2,1fr)}.quality{grid-template-columns:1fr}.wrap{padding:13px}.kv{grid-template-columns:1fr}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><div><h1>MatchLens <span class="muted">0.4</span></h1><div class="sub">Hosted Edition — Football-Data przez bezpieczny backend Vercel.</div></div><div class="badge">token ukryty po stronie serwera</div></div>
+<div class="tabs"><button class="tab active" data-t="a">Analizator</button><button class="tab" data-t="h">Historia</button><button class="tab" data-t="d">Diagnostyka</button></div>
+
+<section id="a">
+<div class="card"><div class="grid">
+<div class="c4"><label>Rozgrywki</label><select id="comp">
+<option value="DED">Eredivisie</option><option value="PL">Premier League</option><option value="PD">La Liga</option><option value="BL1">Bundesliga</option><option value="SA">Serie A</option><option value="FL1">Ligue 1</option>
+<option value="PPL">Primeira Liga</option><option value="ELC">Championship</option><option value="BSA">Brasileirão Série A</option><option value="CL">Champions League</option>
+</select></div>
+<div class="c4"><label>Sezon — rok rozpoczęcia</label><input id="season" type="number" value="2026" min="2000" max="2100"></div>
+<div class="c4"><label>Zakres danych</label><select id="historyMode"><option value="current">Tylko wybrany sezon</option><option value="previous" selected>Wybrany + poprzedni sezon</option></select></div>
+<div class="c4"><label>Minimum meczów na drużynę</label><select id="minimum"><option>5</option><option selected>8</option><option>10</option></select></div>
+<div class="c4"><label>Ostatnie mecze do formy</label><select id="n"><option>8</option><option selected>10</option><option>15</option><option>20</option></select></div>
+<div class="c4"><label>H2H — maks.</label><select id="hn"><option>3</option><option selected>5</option><option>8</option></select></div>
+<div class="c12 row"><button class="btn primary" id="load">Pobierz dane</button><span class="status" id="status">Gotowy do pobrania danych.</span></div>
+</div></div>
+
+<div class="card"><div class="grid">
+<div class="c6"><label>Gospodarze</label><select id="home"><option>Najpierw pobierz dane</option></select></div>
+<div class="c6"><label>Goście</label><select id="away"><option>Najpierw pobierz dane</option></select></div>
+<div class="c6"><label>Absencje gospodarzy — ręczna korekta</label><input id="ha" type="number" min="0" max="12" value="0"></div>
+<div class="c6"><label>Absencje gości — ręczna korekta</label><input id="aa" type="number" min="0" max="12" value="0"></div>
+<div class="c12"><button class="btn primary" id="analyze">Sprawdź jakość i analizuj</button></div>
+</div></div>
+<div id="result" class="hidden"></div>
+</section>
+
+<section id="h" class="hidden"><div class="card"><div class="row" style="justify-content:space-between"><div><h3>Historia prognoz</h3><div class="muted">Zapisywana w tej przeglądarce.</div></div><button class="btn" id="clear">Wyczyść</button></div><div id="hist"></div></div></section>
+
+<section id="d" class="hidden">
+<div class="card"><h3>Diagnostyka połączenia</h3><p class="muted">Tutaj możesz sprawdzić, czy Vercel widzi sekret i czy backend łączy się z Football-Data.</p>
+<button class="btn primary" id="testApi">Testuj backend/API</button><div id="diag" style="margin-top:12px"></div></div>
+</section>
+
+<footer>MatchLens jest narzędziem statystycznym. Nie gwarantuje wyników. Procenty 1X2 są blokowane, gdy próbka jest mniejsza od ustawionego minimum. Dane: Football-Data.org.</footer>
+</div>
+
+<script>
+let A={matches:[],teams:new Map(),last:null,meta:null};
+const $=x=>document.getElementById(x),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),pct=x=>(x*100).toFixed(1)+'%';
+
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');['a','h','d'].forEach(x=>$(x).classList.toggle('hidden',x!==b.dataset.t));if(b.dataset.t==='h')history()});
+
+async function api(params){
+ const q=new URLSearchParams(params);
+ const r=await fetch('/api/football?'+q.toString(),{headers:{'Accept':'application/json'}});
+ let data=null; try{data=await r.json()}catch{throw Error('Backend zwrócił nieprawidłową odpowiedź.')}
+ if(!r.ok) throw Error(data?.error||('HTTP '+r.status));
+ return data;
+}
+
+function normalize(m){return{id:String(m.id),date:(m.utcDate||'').slice(0,10),homeId:String(m.homeTeam?.id||''),awayId:String(m.awayTeam?.id||''),home:m.homeTeam?.name||'',away:m.awayTeam?.name||'',hs:m.score?.fullTime?.home,as:m.score?.fullTime?.away,status:m.status,season:m.seasonStart||null}}
+function done(m){return m.status==='FINISHED'&&Number.isFinite(m.score?.fullTime?.home)&&Number.isFinite(m.score?.fullTime?.away)}
+
+$('load').onclick=async()=>{
+ $('load').disabled=true;$('status').textContent='Pobieranie danych przez backend…';
+ try{
+  const d=await api({action:'matches',competition:$('comp').value,season:$('season').value,includePrevious:$('historyMode').value==='previous'?'1':'0'});
+  A.meta=d.meta||{};A.matches=(d.matches||[]).filter(done).map(normalize);
+  A.teams.clear();A.matches.forEach(m=>{if(m.homeId)A.teams.set(m.homeId,m.home);if(m.awayId)A.teams.set(m.awayId,m.away)});
+  const opt=[...A.teams].sort((a,b)=>a[1].localeCompare(b[1])).map(([id,n])=>`<option value="${id}">${esc(n)}</option>`).join('');
+  $('home').innerHTML=opt||'<option>Brak drużyn</option>';$('away').innerHTML=opt||'<option>Brak drużyn</option>';if($('away').options.length>1)$('away').selectedIndex=1;
+  let extra=A.meta.previousSeasonLoaded?' + poprzedni sezon':'';
+  let warn=A.meta.previousSeasonWarning?' • Poprzedni sezon niedostępny w API':'';
+  $('status').textContent=`Pobrano ${A.matches.length} zakończonych meczów${extra} • ${A.teams.size} drużyn${warn}`;
+ }catch(e){$('status').textContent='Błąd: '+e.message}
+ finally{$('load').disabled=false}
+};
+
+function tm(id){return A.matches.filter(m=>m.homeId===id||m.awayId===id).sort((a,b)=>b.date.localeCompare(a.date))}
+function one(m,id){let h=m.homeId===id,g=h?m.hs:m.as,a=h?m.as:m.hs;return{g,a,r:g>a?'W':g<a?'L':'D',home:h}}
+function stats(ms,id){let w=0,d=0,l=0,g=0,a=0,b=0,o=0;ms.forEach(m=>{let x=one(m,id);g+=x.g;a+=x.a;x.r==='W'?w++:x.r==='D'?d++:l++;if(x.g>0&&x.a>0)b++;if(x.g+x.a>=3)o++});let n=ms.length;return{n,w,d,l,g:n?g/n:0,a:n?a/n:0,ppg:n?(3*w+d)/n:0,btts:n?b/n:0,over:n?o/n:0}}
+function soft(xs){let mx=Math.max(...xs),z=xs.map(x=>Math.exp(x-mx)),s=z.reduce((a,b)=>a+b);return z.map(x=>x/s)}
+function over(l){let e=Math.exp(-l);return clamp(1-(e+e*l+e*l*l/2),0,1)}
+function table(ms){return `<table><tr><th>Data</th><th>Mecz</th><th>Wynik</th></tr>${ms.map(m=>`<tr><td>${esc(m.date)}</td><td>${esc(m.home)} – ${esc(m.away)}</td><td><b>${m.hs}:${m.as}</b></td></tr>`).join('')}</table>`}
+function bar(n,v){return `<div class="barline"><span>${esc(n)}</span><div class="track"><div class="fill" style="width:${v*100}%"></div></div><b>${pct(v)}</b></div>`}
+
+$('analyze').onclick=()=>{
+ let hi=$('home').value,ai=$('away').value;if(!A.teams.has(hi)||!A.teams.has(ai))return alert('Najpierw pobierz dane.');if(hi===ai)return alert('Wybierz różne drużyny.');
+ let hn=A.teams.get(hi),an=A.teams.get(ai),N=+$('n').value,min=+$('minimum').value,H=tm(hi).slice(0,N),B=tm(ai).slice(0,N),hs=stats(H,hi),as=stats(B,ai);
+ let hv=stats(H.filter(m=>m.homeId===hi),hi),av=stats(B.filter(m=>m.awayId===ai),ai);
+ let h2=A.matches.filter(m=>(m.homeId===hi&&m.awayId===ai)||(m.homeId===ai&&m.awayId===hi)).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,+$('hn').value);
+ let dataRatio=Math.min(H.length,B.length)/Math.max(1,N),venueRatio=Math.min(hv.n,av.n)/Math.max(1,Math.ceil(N/2));
+ let q=Math.round(clamp(15+dataRatio*50+venueRatio*20+Math.min(h2.length,5)*3,0,100));
+ let enough=H.length>=min&&B.length>=min;
+ let body=`<div class="card"><div class="match"><h2>${esc(hn)}</h2><div class="vs">VS</div><h2>${esc(an)}</h2></div></div>
+ <div class="card"><div class="quality"><div><div class="muted">Jakość danych</div><div class="qnum">${q}/100</div></div><div><div class="qbar"><div class="qfill" style="width:${q}%"></div></div><p class="muted">${esc(hn)}: ${H.length} meczów • ${esc(an)}: ${B.length} • dom/wyjazd: ${hv.n}/${av.n} • H2H: ${h2.length}</p></div></div></div>`;
+ if(A.meta?.previousSeasonWarning) body+=`<div class="card"><div class="notice warning"><b>Uwaga:</b> API nie udostępniło poprzedniego sezonu w tym zapytaniu. Analiza korzysta tylko z danych, które Football-Data faktycznie zwróciło.</div></div>`;
+ if(!enough){
+   body+=`<div class="card"><div class="notice danger"><b>PROGNOZA ZABLOKOWANA — ZA MAŁO DANYCH</b><br>Minimum: ${min} zakończonych meczów każdej drużyny. ${esc(hn)}: ${H.length}, ${esc(an)}: ${B.length}. Nie generuję sztucznie precyzyjnego 1X2.</div></div>`;
+ }else{
+   let ha=+$('ha').value||0,aa=+$('aa').value||0,h2hW=0,a2hW=0;
+   h2.forEach(m=>{if(m.hs===m.as)return;if((m.homeId===hi&&m.hs>m.as)||(m.awayId===hi&&m.as>m.hs))h2hW++;else a2hW++});
+   let sh=1.5*hs.ppg/3+.52*hs.g-.42*hs.a+.30*hv.ppg/3+.12*(h2.length?h2hW/h2.length:.5)-.055*ha+.16;
+   let sa=1.5*as.ppg/3+.52*as.g-.42*as.a+.27*av.ppg/3+.12*(h2.length?a2hW/h2.length:.5)-.055*aa;
+   let close=1-clamp(Math.abs(sh-sa)/2.5,0,1),[p1,px,p2]=soft([sh,.62+.50*close-.10*((hs.g+as.g)/2),sa]);
+   let xh=clamp((hs.g+as.a)/2+.12-.035*ha,.15,4),xa=clamp((as.g+hs.a)/2-.03-.035*aa,.15,4),ov=over(xh+xa),bt=clamp(1-Math.exp(-xh)-Math.exp(-xa)+Math.exp(-(xh+xa)),0,1);
+   body+=`<div class="card"><h3>Ocena 1X2</h3><div class="probs"><div class="prob"><b>${pct(p1)}</b><small>1 • ${esc(hn)}</small></div><div class="prob"><b>${pct(px)}</b><small>X • remis</small></div><div class="prob"><b>${pct(p2)}</b><small>2 • ${esc(an)}</small></div></div>${bar('Over 2.5',ov)}${bar('BTTS',bt)}</div>
+   <div class="card"><h3>Dane modelu</h3><div class="metrics"><div class="metric"><strong>${hs.w}W ${hs.d}D ${hs.l}L</strong><small>${esc(hn)}</small></div><div class="metric"><strong>${as.w}W ${as.d}D ${as.l}L</strong><small>${esc(an)}</small></div><div class="metric"><strong>${hs.g.toFixed(2)} / ${hs.a.toFixed(2)}</strong><small>gole ${esc(hn)}</small></div><div class="metric"><strong>${as.g.toFixed(2)} / ${as.a.toFixed(2)}</strong><small>gole ${esc(an)}</small></div><div class="metric"><strong>${xh.toFixed(2)} : ${xa.toFixed(2)}</strong><small>prognoza goli</small></div><div class="metric"><strong>${hv.n} / ${av.n}</strong><small>próbka dom/wyjazd</small></div></div></div>`;
+   A.last={at:new Date().toISOString(),home:hn,away:an,p1,px,p2,ov,bt,q,competition:$('comp').value,season:$('season').value};
+   body+=`<div class="card"><button class="btn" onclick="savePrediction()">Zapisz prognozę</button></div>`;
+ }
+ body+=`<div class="grid"><div class="card c6"><h3>${esc(hn)} — ostatnie mecze</h3>${table(H)}</div><div class="card c6"><h3>${esc(an)} — ostatnie mecze</h3>${table(B)}</div><div class="card c12"><h3>H2H</h3>${h2.length?table(h2):'<span class="muted">Brak H2H w pobranym zakresie.</span>'}</div></div>`;
+ $('result').innerHTML=body;$('result').classList.remove('hidden');$('result').scrollIntoView({behavior:'smooth'});
+};
+
+function savePrediction(){if(!A.last)return;let h=JSON.parse(localStorage.ml_hist||'[]');h.unshift(A.last);localStorage.ml_hist=JSON.stringify(h.slice(0,250));alert('Zapisano prognozę.')}
+function history(){let h=JSON.parse(localStorage.ml_hist||'[]');$('hist').innerHTML=h.length?h.map(x=>`<p><b>${esc(x.home)} – ${esc(x.away)}</b><br><span class="muted">${new Date(x.at).toLocaleString('pl-PL')} • jakość ${x.q}/100 • 1 ${pct(x.p1)} / X ${pct(x.px)} / 2 ${pct(x.p2)}</span></p>`).join(''):'<span class="muted">Brak zapisanych prognoz.</span>'}
+$('clear').onclick=()=>{if(confirm('Wyczyścić historię?')){delete localStorage.ml_hist;history()}};
+
+$('testApi').onclick=async()=>{
+ $('diag').innerHTML='<div class="status">Testowanie…</div>';
+ try{
+  const d=await api({action:'health'});
+  $('diag').innerHTML=`<div class="notice good"><b>Backend działa.</b><div class="kv"><span>Vercel Function</span><span class="ok">OK</span></div><div class="kv"><span>FOOTBALL_DATA_TOKEN</span><span class="ok">ustawiony</span></div><div class="kv"><span>Football-Data</span><span class="ok">połączono</span></div><div class="kv"><span>Test rozgrywek</span><span>${esc(d.competition||'OK')}</span></div></div>`;
+ }catch(e){
+  $('diag').innerHTML=`<div class="notice danger"><b>Test nieudany.</b><br>${esc(e.message)}</div>`;
+ }
+};
+</script></body></html>
